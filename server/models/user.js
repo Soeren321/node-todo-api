@@ -32,13 +32,13 @@ var UserSchema = new mongoose.Schema({
     }]
   }
 )
-UserSchema.methods.toJSON = function() {
+UserSchema.methods.toJSON = function () {
   var user = this
   var userObject = user.toObject()
 
   return _.pick(userObject, ['_id', 'email'])
 }
-UserSchema.methods.generateAuthToken = function() {
+UserSchema.methods.generateAuthToken = function () {
   var user = this
   var access = 'auth'
   var token = jwt.sign({_id: user._id.toHexString(), access}, 'abc123').toString()
@@ -49,6 +49,26 @@ UserSchema.methods.generateAuthToken = function() {
   })
 }
 
+UserSchema.statics.findByToken = function (token) {
+  var User = this
+  var decoded
+
+  try {
+    decoded = jwt.verify(token, 'abc123')
+  } catch (e) {
+    return new Promise((resolve, reject) => {
+    reject()
+    })
+    // This works too and is the same
+    // return Promise.reject()
+  }
+
+  return User.findOne({
+    '_id': decoded._id,
+    'tokens.token': token,
+    'tokens.access': 'auth'
+  })
+}
 
 var User = mongoose.model('User', UserSchema)
 
